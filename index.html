@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>3rd Party News</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="//fonts.googleapis.com/css?family=Open+Sans:300" rel="stylesheet">
+
+    <!-- Loading 3rd News CSS -->
+    <link href="assets/css/responsive-grid.min.css" rel="stylesheet">
+    <link href="assets/css/3rd-party-news.css" rel="stylesheet">
+
+
+</head>
+
+<body>
+
+        <h1>Full 100% Container</h1>
+        <div id="news-container" class="news-container"></div>
+
+
+        <h1>Fixed at 50% Container</h1>
+        <div id="news-container-fixed" class="news-container w-50"></div>
+        
+        
+            
+
+
+    
+
+    <script src="assets/js/3rd-party-news.js"></script>
+    <script>
+        var newsFeeder = new NewsThirdParty({
+            selector: "#news-container",
+            classes: "col-lg-3 col-md-4 col-sm-6 col-xs-12",
+            url: "assets/js/fake_news.json", 
+            index: 0,
+            size: 3
+        });
+        newsFeeder.getNewsFeed();
+        var newsFeederFixed = new NewsThirdParty({
+            selector: "#news-container-fixed",
+            classes: "col-md-6 col-sm-12",
+            url: "assets/js/fake_news.json", 
+            index: 0,
+            size: 2
+        });
+        newsFeederFixed.getNewsFeed();
+    
+    </script>
+
+
+</body>
+
+</html>
