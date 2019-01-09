@@ -1,5 +1,4 @@
 
-
 /** Net - XMLHTTP Interface - bfults@gmail.com - 2006-08-29                 **
  ** Code licensed under Creative Commons Attribution-ShareAlike License     **
  ** http://creativecommons.org/licenses/by-sa/2.5/                          **/
@@ -212,6 +211,7 @@ Net._createRequestObject = function()
 
 
 
+
 /** 3rd Party News Starts Here */
 
 NewsThirdParty = function (configs) {
@@ -223,14 +223,24 @@ NewsThirdParty = function (configs) {
     this.configs.classes = !!configs.classes ? configs.classes : '';
     this.configs.url = !!configs.url ? configs.url : '';
     this.configs.index = !!configs.index ? configs.index : 0;
-    this.configs.size = !!configs.size ? configs.size : 2;
-
+    this.configs.remoteCss = !!configs.remoteCss ? configs.remoteCss : [];
+    this.configs.remoteJs = !!configs.remoteJs ? configs.remoteJs : [];
 
     this._init();
     
 }
 
 NewsThirdParty.prototype._init = function () { 
+
+
+    // load CSS & Js scripts
+    this.configs.remoteCss.forEach(element => this._loadJsCssFile(element, "css"));
+    this.configs.remoteJs.forEach(element => this._loadJsCssFile(element, "js"));
+    
+    
+    
+
+
     container = document.querySelector(this.configs.selector);
     container.classList.add("container");
     
@@ -241,7 +251,7 @@ NewsThirdParty.prototype._init = function () {
     divControl = document.createElement('div');
     divControl.classList.add("control");
     container.appendChild(divControl);
-    divControlContent = _loadMoreTemplate.replace("%GRID_PNG%", _gridPNG);
+    divControlContent = _loadMoreTemplate.replace("%GRID_ICON%", _GRID_SVG);
     divControl.innerHTML = divControlContent;
 
     document.querySelector(this.configs.selector + " .third-party-news-load-more" ).addEventListener("click", function(){this._loadMoreFeeds();}.bind(this));
@@ -257,23 +267,46 @@ NewsThirdParty.prototype._init = function () {
 };
 
 
+NewsThirdParty.prototype._loadJsCssFile =  function (filename, filetype){
+    if (filetype=="js"){ //if filename is a external JavaScript file
+        var fileref=document.createElement('script')
+        fileref.setAttribute("type","text/javascript")
+        fileref.setAttribute("src", filename)
+    }
+    else{
+        if (filetype=="css"){ //if filename is an external CSS file
+            var fileref=document.createElement("link")
+            fileref.setAttribute("rel", "stylesheet")
+            fileref.setAttribute("type", "text/css")
+            fileref.setAttribute("href", filename)
+        }
+    }
+
+    if (typeof fileref!="undefined")
+        document.getElementsByTagName("head")[0].appendChild(fileref)
+}
+
+
 
 NewsThirdParty.prototype._fnWhenDone = function (R , extras) { 
     var newsArray = JSON.parse(R.responseText);
-    console.log(newsArray); 
-    console.log(extras); 
+    // console.log(newsArray); 
+    // console.log(extras); 
     if(this.selector === null){
         return;
     }
-    console.log("newsArray"); 
+    // console.log("newsArray"); 
 
-    // fake pagination!! should be ommitted in prod
+    // start fake pagination!! should be ommitted in prod
     maxSize = newsArray.length;
 
     start = Math.min(extras.index * extras.size, maxSize);
     limit = Math.min((extras.index + 1) * extras.size , maxSize);
+    newsArray = newsArray.slice(start, limit);
+    // end fake pagination
 
-    var newsHtml = newsArray.slice(start, limit).map(element => _rederPostHTML(element, extras));
+    var newsHtml = newsArray.map(element => _rederPostHTML(element, extras));
+
 
 
     divRow =  document.querySelector(extras.selector + " .row" );
@@ -297,13 +330,14 @@ NewsThirdParty.prototype._fnWhenError = function (sType, R) { console.log(R); co
 
 
 _rederPostHTML = function (singlePostJson, extras) { 
-    console.log(extras); 
+    // console.log(extras); 
     var htmlPost = _newsPostTemplate;
     htmlPost = htmlPost.replace("%POST_CLASSES%", extras.classes);
     htmlPost = htmlPost.replace("%TITLE%", singlePostJson.title);
     htmlPost = htmlPost.replace("%DESCRIPTION%", singlePostJson.description);
     htmlPost = htmlPost.replace("%THUMBNAIL%", singlePostJson.thumbnail);
     htmlPost = htmlPost.replace("%LINK%", singlePostJson.link);
+    htmlPost = htmlPost.replace("%GO_TO_LINK_ICON%", _LEFT_ARROW_SVG);
 
     return htmlPost;
 };
@@ -338,9 +372,8 @@ _newsPostTemplate = `
                 <div class="post-title">%TITLE%</div>
                 <div class="post-description">%DESCRIPTION%</div>
                 <div class="post-redirect layout-row layout-align-center-center">
-                    <div>
-                        <!-- https://www.toptal.com/designers/htmlarrows/symbols/ -->
-                        <span class="post-link">&gt;</span>
+                    <div style="margin: 10px 0px;">
+                        %GO_TO_LINK_ICON%
                     </div>
     
     
@@ -356,8 +389,8 @@ _newsPostTemplate = `
 _loadMoreTemplate = `
 <div class="post-redirect layout-row layout-align-center-center">
     <div class="third-party-news-load-more">
-        <span class="">Read More</span>
-        <img class="post-image" src="%GRID_PNG%" alt="control">
+    <span class="">Read More</span>
+    <span style="margin-left:10px;">%GRID_ICON%</span>
     </div>
     <div class="news-waiting-load hidden">
         <img class="post-image" src="//media.giphy.com/media/8RyJliVfFM6ac/giphy.gif" alt="control">
@@ -371,7 +404,24 @@ _loadMoreTemplate = `
 
 `;
 
-_gridPNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAJYCAQAAAAUb1BXAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAADkgAAA5IAWtvDf8AAAfRSURBVHja7d2hTgQxGEbRDgaBx/H+D7YOgUOgBkWyihSzfy5zjq5o8mWu7BzrXDzasXnONhN217HPgKfpCwDsEiwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAf+C4ndNXuJrn9Xrsnfw4P6cvezlvm9ustdb7+TV93cs5lmBN2PksLDPg9pdkWejh/OYLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC+68TF+AXx3rnL7CJR0bZywzYWeZHxYCAAAAAAAAAAAAAAAAAAAAAAAAAAAAuAJvus/YezncNhP2X3W3z8P5aw6QIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkPENsjwZRwif6SMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTktMDEtMDlUMDE6MTI6NTMrMDE6MDAH0jZtAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDE5LTAxLTA5VDAxOjEyOjUzKzAxOjAwdo+O0QAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAAASUVORK5CYII=";
+
+
+_LEFT_ARROW_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 50 50" version="1.1" style="width: 75px; height: 75px">
+<g fill="#fff" >
+<path style=" " d="M 14.988281 3.992188 C 14.582031 3.992188 14.21875 4.238281 14.0625 4.613281 C 13.910156 4.992188 14 5.421875 14.292969 5.707031 L 33.585938 25 L 14.292969 44.292969 C 14.03125 44.542969 13.925781 44.917969 14.019531 45.265625 C 14.109375 45.617188 14.382813 45.890625 14.734375 45.980469 C 15.082031 46.074219 15.457031 45.96875 15.707031 45.707031 L 35.707031 25.707031 C 36.097656 25.316406 36.097656 24.683594 35.707031 24.292969 L 15.707031 4.292969 C 15.519531 4.097656 15.261719 3.992188 14.988281 3.992188 Z "></path>
+</g>
+</svg>
+`;
+
+
+_GRID_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="8 8 32 32" version="1.1" style="width: 30px;height: 30px; vertical-align: middle;">
+<g transform="scale(2)" id="surface1">
+<path style=" " d="M 4 4 L 4 8 L 8 8 L 8 4 Z M 10 4 L 10 8 L 14 8 L 14 4 Z M 16 4 L 16 8 L 20 8 L 20 4 Z M 4 10 L 4 14 L 8 14 L 8 10 Z M 10 10 L 10 14 L 14 14 L 14 10 Z M 16 10 L 16 14 L 20 14 L 20 10 Z M 4 16 L 4 20 L 8 20 L 8 16 Z M 10 16 L 10 20 L 14 20 L 14 16 Z M 16 16 L 16 20 L 20 20 L 20 16 Z "/>
+</g>
+</svg>
+`;
 
 
 

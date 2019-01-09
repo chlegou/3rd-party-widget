@@ -7,11 +7,11 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href="//fonts.googleapis.com/css?family=Open+Sans:300" rel="stylesheet">
-
+    
     <!-- Loading 3rd News CSS -->
-    <link href="assets/css/responsive-grid.min.css" rel="stylesheet">
-    <link href="assets/css/3rd-party-news.css" rel="stylesheet">
+    <!-- UPDATE_20190109: static css are canceled, we moved now to remote css -->
+    <!-- <link href="assets/css/responsive-grid.min.css" rel="stylesheet">
+    <link href="assets/css/3rd-party-news.css" rel="stylesheet"> -->
 
 
 </head>
@@ -38,17 +38,19 @@
             classes: "col-lg-3 col-md-4 col-sm-6 col-xs-12",
             url: "assets/js/fake_news.json", 
             index: 0,
-            size: 3
-        });
-        newsFeeder.getNewsFeed();
+            size: 3,
+            remoteCss: ["assets/css/responsive-grid.min.css", "assets/css/3rd-party-news.css"],
+            remoteJs: ["//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"]
+        }).getNewsFeed();
         var newsFeederFixed = new NewsThirdParty({
             selector: "#news-container-fixed",
             classes: "col-md-6 col-sm-12",
             url: "assets/js/fake_news.json", 
             index: 0,
-            size: 2
-        });
-        newsFeederFixed.getNewsFeed();
+            size: 2,
+            remoteCss: ["assets/css/responsive-grid.min.css", "assets/css/3rd-party-news.css"],
+            remoteJs: ["//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"]
+        }).getNewsFeed();
     
     </script>
 
